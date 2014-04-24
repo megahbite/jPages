@@ -15,8 +15,8 @@
       defaults = {
         containerID: "",
         first: false,
-        previous: "← previous",
-        next: "next →",
+        previous: "‹ Prev",
+        next: "Next ›",
         last: false,
         links: "numeric", // blank || title
         startPage: 1,
@@ -54,8 +54,7 @@
     this._next = $(this.options.next);
     this._last = $(this.options.last);
 
-    /* only visible items! */
-    this._items = this._container.children(":visible");
+    this._items = this._container.children();
     this._itemsShowing = $([]);
     this._itemsHiding = $([]);
 
@@ -138,11 +137,11 @@
       navhtml = this.writeBtn("first") + this.writeBtn("previous");
 
       for (; i <= this._numPages; i++) {
-        if (i === 1 && this.options.startRange === 0) navhtml += "<span>...</span>";
+        if (i === 1 && this.options.startRange === 0) navhtml += "<li class='disabled'><span>...</span></li>";
         if (i > this.options.startRange && i <= this._numPages - this.options.endRange)
-          navhtml += "<a href='#' class='jp-hidden'>";
+          navhtml += "<li class='jp-hidden jp-page'><a href='#'>";
         else
-          navhtml += "<a>";
+          navhtml += "<li class='jp-page'><a>";
 
         switch (this.options.links) {
           case "numeric":
@@ -156,31 +155,31 @@
             break;
         }
 
-        navhtml += "</a>";
+        navhtml += "</a></li>";
         if (i === this.options.startRange || i === this._numPages - this.options.endRange)
-          navhtml += "<span>...</span>";
+          navhtml += "<li class='disabled'><span>...</span></li>";
       }
-      navhtml += this.writeBtn("next") + this.writeBtn("last") + "</div>";
+      navhtml += this.writeBtn("next") + this.writeBtn("last") + "</ul>";
       return navhtml;
     },
 
     writeBtn : function(which) {
 
       return this.options[which] !== false && !$(this["_" + which]).length ?
-      "<a class='jp-" + which + "'>" + this.options[which] + "</a>" : "";
+      "<li class='jp-" + which + "'><a>" + this.options[which] + "</a></li>" : "";
 
     },
 
     cacheNavElements : function(holder, index) {
       this._nav[index] = {};
       this._nav[index].holder = holder;
-      this._nav[index].first = this._first.length ? this._first : this._nav[index].holder.find("a.jp-first");
-      this._nav[index].previous = this._previous.length ? this._previous : this._nav[index].holder.find("a.jp-previous");
-      this._nav[index].next = this._next.length ? this._next : this._nav[index].holder.find("a.jp-next");
-      this._nav[index].last = this._last.length ? this._last : this._nav[index].holder.find("a.jp-last");
-      this._nav[index].fstBreak = this._nav[index].holder.find("span:first");
-      this._nav[index].lstBreak = this._nav[index].holder.find("span:last");
-      this._nav[index].pages = this._nav[index].holder.find("a").not(".jp-first, .jp-previous, .jp-next, .jp-last");
+      this._nav[index].first = this._first.length ? this._first : this._nav[index].holder.find("li.jp-first");
+      this._nav[index].previous = this._previous.length ? this._previous : this._nav[index].holder.find("li.jp-previous");
+      this._nav[index].next = this._next.length ? this._next : this._nav[index].holder.find("li.jp-next");
+      this._nav[index].last = this._last.length ? this._last : this._nav[index].holder.find("li.jp-last");
+      this._nav[index].fstBreak = this._nav[index].holder.find("span:first").parent();
+      this._nav[index].lstBreak = this._nav[index].holder.find("span:last").parent();
+      this._nav[index].pages = this._nav[index].holder.find("li.jp-page");
       this._nav[index].permPages =
         this._nav[index].pages.slice(0, this.options.startRange)
           .add(this._nav[index].pages.slice(this._numPages - this.options.endRange, this._numPages));
@@ -193,7 +192,7 @@
 
       // default nav
       nav.holder.bind("click.jPages", this.bind(function(evt) {
-        var newPage = this.getNewPage(nav, $(evt.target));
+        var newPage = this.getNewPage(nav, $(evt.target).parents('li'));
         if (this.validNewPage(newPage)) {
           this._clicked = true;
           this.paginate(newPage);
@@ -419,6 +418,9 @@
           this.updateCurrentPage(nav, page);
           this.updatePagesShowing(nav, interval);
           this.updateBreaks(nav, interval);
+          $('li', nav.holder).removeClass("first last");
+          $('li:not(.jp-hidden)', nav.holder).first().addClass("first");
+          $('li:not(.jp-hidden)', nav.holder).last().addClass("last");
         }
       }
       return interval;
@@ -437,26 +439,26 @@
 
     updateBtns : function(nav, page) {
       if (page === 1) {
-        nav.first.addClass("jp-disabled");
-        nav.previous.addClass("jp-disabled");
+        nav.first.addClass("jp-hidden");
+        nav.previous.addClass("jp-hidden");
       }
       if (page === this._numPages) {
-        nav.next.addClass("jp-disabled");
-        nav.last.addClass("jp-disabled");
+        nav.next.addClass("jp-hidden");
+        nav.last.addClass("jp-hidden");
       }
       if (this._currentPageNum === 1 && page > 1) {
-        nav.first.removeClass("jp-disabled");
-        nav.previous.removeClass("jp-disabled");
+        nav.first.removeClass("jp-hidden");
+        nav.previous.removeClass("jp-hidden");
       }
       if (this._currentPageNum === this._numPages && page < this._numPages) {
-        nav.next.removeClass("jp-disabled");
-        nav.last.removeClass("jp-disabled");
+        nav.next.removeClass("jp-hidden");
+        nav.last.removeClass("jp-hidden");
       }
     },
 
     updateCurrentPage : function(nav, page) {
-      nav.currentPage.removeClass("jp-current");
-      nav.currentPage = nav.pages.eq(page - 1).addClass("jp-current");
+      nav.currentPage.removeClass("active");
+      nav.currentPage = nav.pages.eq(page - 1).addClass("active");
     },
 
     updatePagesShowing : function(nav, interval) {
